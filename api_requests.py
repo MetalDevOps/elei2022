@@ -7,6 +7,9 @@ import aiohttp
 import aiofiles
 from pyunpack import Archive
 from pathlib import Path
+from logger import get_logger
+
+log = get_logger(__name__)
 
 
 class ApiRequests(MakeRequest):
@@ -43,7 +46,7 @@ class ApiRequests(MakeRequest):
             "sp",
             "to",
         ]
-        # self.lista_siglas = ["zz"]
+        # self.lista_siglas = ["go"]
 
     def get(self, url, **kwargs):
         return self.request("GET", url, **kwargs)
@@ -92,12 +95,16 @@ class ApiRequests(MakeRequest):
         if not os.path.exists(f"downloads/{sigla_estado}/{cd_municipio}/{cd_zona}/{cd_secao}"):
             os.makedirs(f"downloads/{sigla_estado}/{cd_municipio}/{cd_zona}/{cd_secao}")
 
-        # url = "https://resultados.tse.jus.br/oficial/ele2022/arquivo-urna/406/dados/go/92010/0087/0074/43304f4c543738743847325567706b2d53525a6965734b2b2d37654e597145707a5567567a6e67594b72553d/o00406-9201000870074.logjez"
-        response = self.get(url)
-        # path = "dowloads/o00406-9201000870074.logjez"
-        with open(os.path.join(log_path, nmarq), "wb") as f:
-            f.write(response.content)
-            Archive(os.path.join(log_path, nmarq)).extractall(log_path)
-            p = Path(log_path + "/" + "logd.dat")
-            p.rename(log_path_extracted)
+        if not os.path.exists(log_path_extracted):
+            log.info(f"Downloading {url}")
+            # url = "https://resultados.tse.jus.br/oficial/ele2022/arquivo-urna/406/dados/go/92010/0087/0074/43304f4c543738743847325567706b2d53525a6965734b2b2d37654e597145707a5567567a6e67594b72553d/o00406-9201000870074.logjez"
+            response = self.get(url)
+            # path = "dowloads/o00406-9201000870074.logjez"
+            with open(os.path.join(log_path, nmarq), "wb") as f:
+                f.write(response.content)
+                Archive(os.path.join(log_path, nmarq)).extractall(log_path)
+                p = Path(log_path + "/" + "logd.dat")
+                p.rename(log_path_extracted)
+        else:
+            log.info(f"File already exists {log_path_extracted}")
 
