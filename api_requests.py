@@ -8,6 +8,8 @@ import aiofiles
 from pyunpack import Archive
 from pathlib import Path
 from logger import get_logger
+from time import sleep
+import py7zr
 
 log = get_logger(__name__)
 
@@ -46,7 +48,7 @@ class ApiRequests(MakeRequest):
             "sp",
             "to",
         ]
-        # self.lista_siglas = ["go"]
+        # self.lista_siglas = ["ce"]
 
     def get(self, url, **kwargs):
         return self.request("GET", url, **kwargs)
@@ -81,11 +83,14 @@ class ApiRequests(MakeRequest):
                 for i in mun_zon_sec_dump[f"{uf}"]:
                     url = f"{self.base_url}/arquivo-urna/406/dados/{uf}/{i['mu']}/{i['zon']}/{i['sec']}/p000406-{uf}-m{i['mu']}-z{i['zon']}-s{i['sec']}-aux.json"
                     
+                    # if i["mu"] == "15474" and i["zon"] == "0022" and i["sec"] == "0109":
                     response = self.get(url).json()["hashes"]
                     hash = response[0]["hash"]
                     for j in range(len(response[0]["nmarq"])):
                         if response[0]["nmarq"][j].endswith("ez"):
                             nmarq = response[0]["nmarq"][j]
+
+                                #15474/0022/0109/334b386d615a2b516b4c426f4370397733616b446c5a5a5361754968354f314c374864536e4659554f43593d/o00406-1547400220109.logjez
                             self.get_hashes(f"{uf}", i["mu"], i["zon"], i["sec"], hash, nmarq)
 
     def get_hashes(self, sigla_estado, cd_municipio, cd_zona, cd_secao, hash, nmarq: str):
@@ -102,9 +107,13 @@ class ApiRequests(MakeRequest):
             # path = "dowloads/o00406-9201000870074.logjez"
             with open(os.path.join(log_path, nmarq), "wb") as f:
                 f.write(response.content)
-                Archive(os.path.join(log_path, nmarq)).extractall(log_path)
+                py7zr.unpack_7zarchive(os.path.join(log_path, nmarq), log_path)
+                # Archive(os.path.join(log_path, nmarq)).extractall(log_path)
                 p = Path(log_path + "/" + "logd.dat")
                 p.rename(log_path_extracted)
+                log.info(f"File {nmarq} downloaded to {log_path_extracted}")
+
+                
         else:
             log.info(f"File already exists {log_path_extracted}")
 
